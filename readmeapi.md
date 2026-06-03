@@ -1,4 +1,56 @@
-# Calculator Architecture & Database Documentation
+# مستندات معماری و دیتابیس ماشین‌حساب (Architecture & Database Documentation)
+
+## مرور کلی معماری (Architecture Overview)
+
+این پروژه از اصول **معماری پاک (Clean Architecture)** پیروی می‌کند که جدایی وظایف، قابلیت نگهداری و تست‌پذیری کد را تضمین می‌کند.
+
+### ۱. لایه Domain
+هسته مرکزی اپلیکیشن که شامل منطق کسب‌وکار و مدل‌ها است. این لایه کاملاً Kotlin خالص است و وابستگی به فریم‌ورک اندروید ندارد.
+- **مدل‌ها (Models):** `Calculation`, `CalculatorOperation`
+- **اینترفیس ریپازیتوری:** `CalculatorRepository`
+- **موارد استفاده (Use Cases):**
+    - `CalculateExpressionUseCase`: مدیریت ارزیابی محاسبات ریاضی.
+    - `GetHistoryUseCase`: بازیابی تاریخچه محاسبات.
+    - `ClearHistoryUseCase`: پاک‌سازی کل تاریخچه.
+    - `SaveCalculationUseCase`: ذخیره یک محاسبه جدید.
+    - `PlaySoundUseCase`: اجرای بازخورد صوتی.
+
+### ۲. لایه Data
+مدیریت ذخیره‌سازی داده‌ها و تعامل با فریم‌ورک‌های خارجی.
+- **ذخیره‌سازی محلی (Room Database):**
+    - `CalculationEntity`: مدل دیتابیس برای Room.
+    - `CalculationDao`: شیء دسترسی به داده‌ها برای عملیات تاریخچه.
+    - `AppDatabase`: پیکربندی دیتابیس Room.
+- **پیاده‌سازی ریپازیتوری:** `CalculatorRepositoryImpl` لایه Domain را به منابع داده متصل می‌کند.
+- **مدیریت صدا (Audio Management):** `SoundManager` پخش صدای کلیک را با استفاده از `AudioManager` اندروید مدیریت می‌کند.
+
+### ۳. لایه Presentation
+مدیریت رابط کاربری و تعاملات کاربر با استفاده از Jetpack Compose.
+- **الگوی MVI/MVVM:** کلاس `CalculatorViewModel` وضعیت (State) را با استفاده از `StateFlow` مدیریت کرده و رویدادهای `CalculatorEvent` را پردازش می‌کند.
+- **اجزای UI:** توابع Compose ماژولار مانند `CalculatorButton` ، `DisplaySection` و `HistorySection`.
+- **تم (Theme):** پیاده‌سازی Material 3 برای ظاهری مدرن.
+
+---
+
+## ساختار جداول دیتابیس (Database Schema)
+
+### Table: `history`
+| فیلد (Field) | نوع (Type) | توضیحات |
+|---|---|---|
+| `id` | Integer (PK) | شناسه منحصر‌به‌فرد خودکار. |
+| `expression` | String | عبارت ریاضی وارد شده توسط کاربر. |
+| `result` | String | نتیجه محاسبه شده عبارت. |
+| `timestamp` | Long | زمان انجام محاسبه. |
+
+---
+
+## بازخورد صوتی (Audio Feedback)
+از طریق `SoundManager` در لایه دیتا مدیریت می‌شود. این کلاس از `audioManager.playSoundEffect(AudioManager.FX_KEY_CLICK)` برای ارائه صدای کلیک استاندارد سیستم هنگام فشردن دکمه‌ها استفاده می‌کند.
+
+---
+---
+
+# Calculator Architecture & Database Documentation (English Version)
 
 ## Architecture Overview
 
