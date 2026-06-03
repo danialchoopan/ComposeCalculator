@@ -3,40 +3,53 @@ package ir.danialchoopan.composecalculator
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.room.Room
+import ir.danialchoopan.composecalculator.data.audio.SoundManager
+import ir.danialchoopan.composecalculator.data.local.AppDatabase
+import ir.danialchoopan.composecalculator.data.repository.CalculatorRepositoryImpl
+import ir.danialchoopan.composecalculator.domain.use_case.*
+import ir.danialchoopan.composecalculator.presentation.CalculatorScreen
+import ir.danialchoopan.composecalculator.presentation.CalculatorViewModel
 import ir.danialchoopan.composecalculator.ui.theme.ComposeCalculatorTheme
-import ir.danialchoopan.composecalculator.ui.theme.MediumGray
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            val viewModel = viewModel<CalculatorViewModel>()
-            val state = viewModel.state
-            val buttonSpacing = 8.dp
 
-            CalculatorM(
-                state = state,
-                buttonSpacing = buttonSpacing,
-                onAction = viewModel::onAction,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MediumGray)
-                    .padding(16.dp)
-            )
+        val db = Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java,
+            AppDatabase.DATABASE_NAME
+        ).build()
+
+        val soundManager = SoundManager(applicationContext)
+        val repository = CalculatorRepositoryImpl(db.calculationDao, soundManager)
+
+        val viewModelFactory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return CalculatorViewModel(
+                    CalculateExpressionUseCase(),
+                    GetHistoryUseCase(repository),
+                    ClearHistoryUseCase(repository),
+                    SaveCalculationUseCase(repository),
+                    PlaySoundUseCase(repository)
+                ) as T
+            }
+        }
+
+        setContent {
+            ComposeCalculatorTheme {
+                val viewModel = ViewModelProvider(this, viewModelFactory)[CalculatorViewModel::class.java]
+                val state by viewModel.state.collectAsState()
+                CalculatorScreen(
+                    state = state,
+                    onEvent = viewModel::onEvent
+                )
+            }
         }
     }
 }
